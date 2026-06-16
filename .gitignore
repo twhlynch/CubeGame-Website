@@ -1,0 +1,10 @@
+.DS_Store
+*:Zone.Identifier
+[Tt]humbs.db
+[Dd]esktop.ini
+
+/node_modules/
+/dist/
+/build/
+.env
+.env.*
