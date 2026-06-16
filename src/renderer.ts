@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createMaterial } from './shader';
 
 const COLORS = [
 	0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff3300, 0x7f00ff, 0xffffff,
@@ -61,7 +62,7 @@ export class ShapeRenderer {
 			const color = COLORS[idx % COLORS.length] ?? 0xffffff;
 
 			const geo = makeGeometry(shape);
-			const mat = new THREE.MeshBasicMaterial({ color }); // TODO:
+			const mat = createMaterial(color);
 			mesh = new THREE.Mesh(geo, mat);
 
 			this.scene.add(mesh);
