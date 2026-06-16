@@ -5,15 +5,26 @@ import type { ShapeDatum } from './renderer';
 import { UI } from './ui';
 import * as THREE from 'three';
 
+// prettier-ignore
+type HandDatum = [
+	tx: number, ty: number, tz: number,
+	ix: number, iy: number, iz: number,
+	mx: number, my: number, mz: number,
+	rx: number, ry: number, rz: number,
+	lx: number, ly: number, lz: number,
+];
+
 interface ServerMessage {
 	p?: [number, number, number];
 	r?: [number, number, number, number];
 	s?: ShapeDatum[];
+	h?: [HandDatum, HandDatum];
 }
 
 function main() {
 	const container = document.getElementById('container')!;
-	const { scene, camera, controls, renderer } = createScene(container);
+	const { scene, camera, controls, renderer, handGroups } =
+		createScene(container);
 	const shapes = new ShapeRenderer(scene);
 	const ui = new UI();
 
@@ -57,6 +68,24 @@ function main() {
 				if (msg.s) {
 					shapes.update(msg.s);
 				}
+
+				if (msg.h) {
+					for (let h = 0; h < 2; h++) {
+						const hand = msg.h[h];
+						if (!hand) continue;
+						const group = handGroups[h];
+						for (let t = 0; t < 5; t++) {
+							const sphere = group.children[t] as THREE.Mesh;
+							if (sphere) {
+								sphere.position.set(
+									hand[t * 3],
+									hand[t * 3 + 1],
+									hand[t * 3 + 2],
+								);
+							}
+						}
+					}
+				}
 			} catch {
 				// ignore parse errors
 			}
@@ -68,6 +97,12 @@ function main() {
 
 		const marker = scene.getObjectByName('player') as THREE.Mesh;
 		if (marker) marker.position.set(0, 0, 0);
+
+		for (const group of handGroups) {
+			for (const child of group.children) {
+				(child as THREE.Mesh).position.set(0, 0, 0);
+			}
+		}
 
 		if (ws) {
 			ws.close();
