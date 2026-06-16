@@ -27,11 +27,13 @@ function expandIP(input: string): { ip: string; port: number } {
 export class UI {
 	private ip: HTMLInputElement;
 	private connect: HTMLElement;
+	private bar: HTMLElement;
 	private handler: ((ip: string, port: number) => void) | null = null;
 
 	constructor() {
 		this.ip = document.getElementById('ip-input') as HTMLInputElement;
 		this.connect = document.getElementById('connect-btn') as HTMLElement;
+		this.bar = document.getElementById('connect-bar') as HTMLElement;
 
 		this.connect.addEventListener('click', () => this.handleConnect());
 		this.ip.addEventListener('keydown', (e) => {
@@ -46,6 +48,14 @@ export class UI {
 	setConnected(connected: boolean): void {
 		this.connect.textContent = connected ? 'Disconnect' : 'Connect';
 		this.connect.className = connected ? 'connected' : '';
+	}
+
+	show(): void {
+		this.bar.style.display = 'flex';
+	}
+
+	hide(): void {
+		this.bar.style.display = 'none';
 	}
 
 	private handleConnect(): void {

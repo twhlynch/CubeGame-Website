@@ -31,7 +31,11 @@ function main() {
 	let ws: WebSocket | null = null;
 	let connected = false;
 
-	function connect(ip: string, port: number) {
+	const isRemote =
+		window.location.hostname !== 'localhost' &&
+		window.location.hostname !== '127.0.0.1';
+
+	function connect(ip: string, port: number, auto?: boolean) {
 		disconnect();
 
 		const url = `ws://${ip}:${port}/`;
@@ -39,6 +43,7 @@ function main() {
 		try {
 			ws = new WebSocket(url);
 		} catch {
+			if (auto) ui.show();
 			return;
 		}
 
@@ -52,6 +57,7 @@ function main() {
 			ui.setConnected(false);
 			ws = null;
 			shapes.clear();
+			if (auto) ui.show();
 		});
 
 		ws.addEventListener('message', (e: MessageEvent) => {
@@ -108,6 +114,11 @@ function main() {
 			ws.close();
 			ws = null;
 		}
+	}
+
+	if (isRemote) {
+		ui.hide();
+		connect(window.location.hostname, 8080, true);
 	}
 
 	ui.onConnect((ip, port) => {
