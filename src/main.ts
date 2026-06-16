@@ -1,15 +1,9 @@
 import './style.css';
 import { createScene } from './scene';
+import { ShapeRenderer } from './renderer';
+import type { ShapeDatum } from './renderer';
 import { UI } from './ui';
 import * as THREE from 'three';
-
-type FullDatum = [
-	id: number, idx: number,
-	px: number, py: number, pz: number,
-	rx: number, ry: number, rz: number, rw: number,
-	sx: number, sy: number, sz: number,
-];
-export type ShapeDatum = [id: number] | FullDatum;
 
 interface ServerMessage {
 	p?: [number, number, number];
@@ -20,6 +14,7 @@ interface ServerMessage {
 function main() {
 	const container = document.getElementById('container')!;
 	const { scene, camera, controls, renderer } = createScene(container);
+	const shapes = new ShapeRenderer(scene);
 	const ui = new UI();
 
 	let ws: WebSocket | null = null;
@@ -45,7 +40,7 @@ function main() {
 			connected = false;
 			ui.setConnected(false);
 			ws = null;
-			// TODO: clear shapes
+			shapes.clear();
 		});
 
 		ws.addEventListener('message', (e: MessageEvent) => {
@@ -60,7 +55,7 @@ function main() {
 				}
 
 				if (msg.s) {
-					// TODO: create shapes
+					shapes.update(msg.s);
 				}
 			} catch {
 				// ignore parse errors
@@ -69,7 +64,7 @@ function main() {
 	}
 
 	function disconnect(): void {
-		// TODO: clear shapes
+		shapes.clear();
 
 		const marker = scene.getObjectByName('player') as THREE.Mesh;
 		if (marker) marker.position.set(0, 0, 0);
