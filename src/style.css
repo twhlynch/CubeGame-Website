@@ -11,3 +11,71 @@ body {
 	overflow: hidden;
 	background: #1e1e1e;
 }
+
+#container {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+#container canvas {
+	display: block;
+}
+
+#connect-bar {
+	position: fixed;
+	top: 16px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: #2a2a2a;
+	padding: 8px;
+	border-radius: 10px;
+	pointer-events: auto;
+	font-family: monospace;
+	font-size: 13px;
+}
+
+#connect-bar input {
+	background: #1e1e1e;
+	border: 1px solid #444;
+	color: #ccc;
+	padding: 5px 10px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-family: inherit;
+	width: 120px;
+	outline: none;
+}
+
+#connect-bar input:focus {
+	border-color: #666;
+}
+
+#connect-bar button {
+	background: #3a3a3a;
+	border: none;
+	color: #ccc;
+	padding: 5px 14px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 12px;
+	font-family: inherit;
+}
+
+#connect-bar button:hover {
+	background: #4a4a4a;
+}
+
+#connect-bar button.connected {
+	background: #2a4a2a;
+}
+
+#connect-bar button.connected:hover {
+	background: #3a5a3a;
+}
