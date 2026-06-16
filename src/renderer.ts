@@ -12,9 +12,9 @@ function makeGeometry(type: number) {
 		case 0: return new THREE.BoxGeometry(2, 2, 2);
 		case 1: return new THREE.SphereGeometry(1, 12, 12);
 		case 2: return new THREE.ConeGeometry(1, 2, 4);
-		case 3: return new THREE.CylinderGeometry(1, 1, 1, 12);
-		case 4: return new THREE.BoxGeometry(1, 2, 1);
-		default: return new THREE.BoxGeometry(1, 1, 1);
+		case 3: return new THREE.BoxGeometry(1, 2, 1);
+		case 4: return new THREE.CylinderGeometry(1, 1, 1, 12);
+		default: return new THREE.BoxGeometry(2, 2, 2);
 	}
 }
 
