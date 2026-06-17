@@ -118,7 +118,7 @@ function main() {
 
 	if (isRemote) {
 		ui.hide();
-		connect(window.location.hostname, 8080, true);
+		connect(window.location.hostname, 8081, true);
 	}
 
 	ui.onConnect((ip, port) => {

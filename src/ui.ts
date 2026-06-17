@@ -1,4 +1,4 @@
-const DEFAULT_PORT = 8080;
+const DEFAULT_PORT = 8081;
 
 function expandIP(input: string): { ip: string; port: number } {
 	const trimmed = input.trim();
