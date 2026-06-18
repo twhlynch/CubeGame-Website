@@ -28,26 +28,39 @@ export class UI {
 	private ip: HTMLInputElement;
 	private connect: HTMLElement;
 	private bar: HTMLElement;
-	private handler: ((ip: string, port: number) => void) | null = null;
+	private fpvBtn: HTMLElement;
+	private connectHandler: ((ip: string, port: number) => void) | null = null;
+	private fpvHandler: (() => void) | null = null;
 
 	constructor() {
 		this.ip = document.getElementById('ip-input') as HTMLInputElement;
 		this.connect = document.getElementById('connect-btn') as HTMLElement;
 		this.bar = document.getElementById('connect-bar') as HTMLElement;
+		this.fpvBtn = document.getElementById('fpv-toggle') as HTMLElement;
 
 		this.connect.addEventListener('click', () => this.handleConnect());
 		this.ip.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') this.handleConnect();
 		});
+		this.fpvBtn.addEventListener('click', () => this.fpvHandler?.());
 	}
 
 	onConnect(fn: (ip: string, port: number) => void): void {
-		this.handler = fn;
+		this.connectHandler = fn;
+	}
+
+	onFpvToggle(fn: () => void): void {
+		this.fpvHandler = fn;
 	}
 
 	setConnected(connected: boolean): void {
 		this.connect.textContent = connected ? 'Disconnect' : 'Connect';
 		this.connect.className = connected ? 'connected' : '';
+	}
+
+	setFpvActive(active: boolean): void {
+		this.fpvBtn.textContent = active ? 'Orbit' : 'FPV';
+		this.fpvBtn.classList.toggle('active', active);
 	}
 
 	show(): void {
@@ -59,8 +72,8 @@ export class UI {
 	}
 
 	private handleConnect(): void {
-		if (!this.handler) return;
+		if (!this.connectHandler) return;
 		const { ip, port } = expandIP(this.ip.value);
-		this.handler(ip, port);
+		this.connectHandler(ip, port);
 	}
 }

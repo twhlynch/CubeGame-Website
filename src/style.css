@@ -79,3 +79,30 @@ body {
 #connect-bar button.connected:hover {
 	background: #3a5a3a;
 }
+
+#fpv-toggle {
+	position: fixed;
+	top: 16px;
+	right: 16px;
+	z-index: 10;
+	background: #3a3a3a;
+	border: none;
+	color: #ccc;
+	padding: 5px 14px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 12px;
+	font-family: monospace;
+}
+
+#fpv-toggle:hover {
+	background: #4a4a4a;
+}
+
+#fpv-toggle.active {
+	background: #2a4a6a;
+}
+
+#fpv-toggle.active:hover {
+	background: #3a5a7a;
+}

@@ -31,9 +31,31 @@ function main() {
 	let ws: WebSocket | null = null;
 	let connected = false;
 
+	let firstPerson = false;
+	const origCamPos = camera.position.clone();
+	const origTarget = controls.target.clone();
+	const playerQuat = new THREE.Quaternion();
+	let hasPlayerQuat = false;
+
 	const isRemote =
 		window.location.hostname !== 'localhost' &&
 		window.location.hostname !== '127.0.0.1';
+
+	ui.onFpvToggle(() => {
+		firstPerson = !firstPerson;
+		const marker = scene.getObjectByName('player');
+
+		if (firstPerson) {
+			controls.enabled = false;
+			if (marker) marker.visible = false;
+		} else {
+			controls.enabled = true;
+			camera.position.copy(origCamPos);
+			controls.target.copy(origTarget);
+			if (marker) marker.visible = true;
+		}
+		ui.setFpvActive(firstPerson);
+	});
 
 	function connect(ip: string, port: number, auto?: boolean) {
 		disconnect();
@@ -69,6 +91,11 @@ function main() {
 					if (marker) {
 						marker.position.set(msg.p[0], msg.p[1], msg.p[2]);
 					}
+				}
+
+				if (msg.r) {
+					playerQuat.set(msg.r[0], msg.r[1], msg.r[2], msg.r[3]);
+					hasPlayerQuat = true;
 				}
 
 				if (msg.s) {
@@ -132,7 +159,21 @@ function main() {
 	});
 
 	function loop() {
-		controls.update();
+		if (firstPerson) {
+			const marker = scene.getObjectByName('player');
+			if (marker) {
+				camera.position.set(
+					marker.position.x,
+					marker.position.y,
+					marker.position.z,
+				);
+				if (hasPlayerQuat) {
+					camera.quaternion.copy(playerQuat);
+					camera.updateMatrix();
+				}
+			}
+		}
+		if (!firstPerson) controls.update();
 		renderer.render(scene, camera);
 		requestAnimationFrame(loop);
 	}
