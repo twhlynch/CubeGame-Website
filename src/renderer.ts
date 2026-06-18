@@ -2,21 +2,36 @@ import * as THREE from 'three';
 import { createMaterial } from './shader';
 
 const COLORS = [
-	0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff3300, 0x7f00ff, 0xffffff,
-	0x333333, 0x000000,
-];
+	new THREE.Color(1.0, 0.0, 0.0), // red
+	new THREE.Color(0.0, 1.0, 0.0), // green
+	new THREE.Color(0.0, 0.0, 1.0), // blue
+	new THREE.Color(1.0, 1.0, 0.0), // yellow
+	new THREE.Color(1.0, 0.2, 0.0), // orange
+	new THREE.Color(0.5, 0.0, 1.0), // purple
+	new THREE.Color(1.0, 1.0, 1.0), // white
+	new THREE.Color(0.2, 0.2, 0.2), // gray
+	new THREE.Color(0.0, 0.0, 0.0), // black
+].map((c) => c.convertLinearToSRGB());
 
-function makeGeometry(type: number) {
-	// prettier-ignore
-	switch (type) {
-		case 0: return new THREE.BoxGeometry(2, 2, 2);
-		case 1: return new THREE.SphereGeometry(1, 12, 12);
-		case 2: return new THREE.ConeGeometry(1, 2, 4);
-		case 3: return new THREE.BoxGeometry(1, 2, 1);
-		case 4: return new THREE.CylinderGeometry(1, 1, 1, 12);
-		default: return new THREE.BoxGeometry(2, 2, 2);
-	}
-}
+const geometries = [
+	new THREE.BoxGeometry(2, 2, 2),
+	new THREE.SphereGeometry(1, 12, 12),
+	(() => {
+		const geometry = new THREE.ConeGeometry(Math.sqrt(2), 2, 4, 1, false);
+		geometry.rotateY(Math.PI / 4); // cone is rotated by default
+		return geometry;
+	})(),
+	new THREE.BoxGeometry(1, 2, 1),
+	new THREE.CylinderGeometry(1, 1, 1, 12),
+	new THREE.BoxGeometry(2, 2, 2),
+].map((geometry: THREE.BufferGeometry, i) => {
+	if (i === 1) return geometry; // sphere
+
+	// dont smooth shade
+	geometry = geometry.toNonIndexed();
+	geometry.computeVertexNormals();
+	return geometry;
+});
 
 // prettier-ignore
 type FullDatum = [
@@ -61,7 +76,7 @@ export class ShapeRenderer {
 			const shape = Math.floor(idx / COLORS.length);
 			const color = COLORS[idx % COLORS.length] ?? 0xffffff;
 
-			const geo = makeGeometry(shape);
+			const geo = geometries[shape];
 			const mat = createMaterial(color);
 			mesh = new THREE.Mesh(geo, mat);
 
