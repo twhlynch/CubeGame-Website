@@ -3,8 +3,8 @@ const DEFAULT_PORT = 8081;
 function expandIP(input: string): { ip: string; port: number } {
 	const trimmed = input.trim();
 
-	// '' -> 127.0.0.1
-	if (!trimmed) return { ip: '127.0.0.1', port: DEFAULT_PORT };
+	// '' -> hostname
+	if (!trimmed) return { ip: window.location.hostname, port: DEFAULT_PORT };
 
 	// '192.168.0.1:8081' -> 192.168.0.1:8081
 	// '41:8081' -> 192.168.0.41:8081
