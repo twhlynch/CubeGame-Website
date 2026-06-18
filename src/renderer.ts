@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createMaterial } from './shader';
+import { SmoothVec3, SmoothQuat } from './smooth';
 
 const COLORS = [
 	new THREE.Color(1.0, 0.0, 0.0), // red
@@ -45,12 +46,16 @@ export type ShapeDatum = [id: number] | FullDatum;
 export class ShapeRenderer {
 	private scene: THREE.Scene;
 	private meshes = new Map<number, THREE.Mesh>();
+	private pos = new Map<number, SmoothVec3>();
+	private quat = new Map<number, SmoothQuat>();
+	private scl = new Map<number, SmoothVec3>();
+	private fresh = true;
 
 	constructor(scene: THREE.Scene) {
 		this.scene = scene;
 	}
 
-	/** update with new shape data */
+	/** store latest targets from server */
 	update(data: ShapeDatum[]) {
 		const seen = new Set<number>();
 
@@ -59,20 +64,48 @@ export class ShapeRenderer {
 			seen.add(id);
 
 			if (s.length == 12) {
-				this.updateMesh(s);
+				try {
+					this.setTargets(s);
+				} catch {}
 			}
 		}
 
 		this.dispose(seen);
+		this.fresh = false;
+	}
+
+	/** lerp all shapes toward their targets */
+	interpolate(alpha: number) {
+		for (const [id, p] of this.pos) {
+			const mesh = this.meshes.get(id);
+			if (!mesh) continue;
+			p.update(alpha);
+			p.apply(mesh.position);
+		}
+
+		for (const [id, q] of this.quat) {
+			const mesh = this.meshes.get(id);
+			if (!mesh) continue;
+			q.update(alpha);
+			q.apply(mesh.quaternion);
+		}
+
+		for (const [id, s] of this.scl) {
+			const mesh = this.meshes.get(id);
+			if (!mesh) continue;
+			s.update(alpha);
+			s.apply(mesh.scale);
+		}
 	}
 
 	/** build or update a mesh from shape data */
-	updateMesh(data: FullDatum) {
+	setTargets(data: FullDatum) {
 		const id = data[0];
 		const idx = data[1];
 
 		let mesh = this.meshes.get(id);
-		if (!mesh) {
+		const isNew = !mesh;
+		if (isNew) {
 			const shape = Math.floor(idx / COLORS.length);
 			const color = COLORS[idx % COLORS.length] ?? 0xffffff;
 
@@ -82,33 +115,66 @@ export class ShapeRenderer {
 
 			this.scene.add(mesh);
 			this.meshes.set(id, mesh);
+			this.pos.set(id, new SmoothVec3());
+			this.quat.set(id, new SmoothQuat());
+			this.scl.set(id, new SmoothVec3());
 		}
 
-		mesh.position.set(data[2], data[3], data[4]);
-		mesh.quaternion.set(data[5], data[6], data[7], data[8]);
-		mesh.scale.set(data[9], data[10], data[11]);
+		this.pos.get(id)!.set(data[2], data[3], data[4]);
+		this.quat.get(id)!.set(data[5], data[6], data[7], data[8]);
+		this.scl.get(id)!.set(data[9], data[10], data[11]);
+
+		if (isNew && !this.fresh) {
+			this.pos.get(id)!.snap();
+			this.quat.get(id)!.snap();
+			this.scl.get(id)!.snap();
+		}
 	}
 
 	/** remove unseen meshes */
 	dispose(seen: Set<number>) {
-		for (const [index, mesh] of this.meshes) {
-			if (!seen.has(index)) {
-				this.scene.remove(mesh);
-				mesh.geometry.dispose();
-				(mesh.material as THREE.Material).dispose();
-				this.meshes.delete(index);
-			}
+		const dead: Array<[number, THREE.Mesh]> = [];
+
+		for (const [id, mesh] of this.meshes) {
+			if (!seen.has(id)) dead.push([id, mesh]);
+		}
+
+		for (const [id] of dead) {
+			this.meshes.delete(id);
+			this.pos.delete(id);
+			this.quat.delete(id);
+			this.scl.delete(id);
+		}
+
+		for (const [, mesh] of dead) {
+			this.scene.remove(mesh);
+			mesh.geometry.dispose();
+			(mesh.material as THREE.Material).dispose();
 		}
 	}
 
 	/** clear all meshes */
 	clear() {
-		for (const [, mesh] of this.meshes) {
+		const all = Array.from(this.meshes.values());
+
+		this.meshes.clear();
+		this.pos.clear();
+		this.quat.clear();
+		this.scl.clear();
+		this.fresh = true;
+
+		for (const mesh of all) {
 			this.scene.remove(mesh);
 			mesh.geometry.dispose();
 			(mesh.material as THREE.Material).dispose();
 		}
-		this.meshes.clear();
+	}
+
+	/** set all targets to origin so shapes lerp away on disconnect */
+	disconnect() {
+		for (const p of this.pos.values()) p.set(0, 0, 0);
+		for (const q of this.quat.values()) q.set(0, 0, 0, 1);
+		for (const s of this.scl.values()) s.set(0, 0, 0);
 	}
 
 	/** clear all meshes */

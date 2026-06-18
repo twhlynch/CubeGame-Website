@@ -3,6 +3,7 @@ import { createScene } from './scene';
 import { ShapeRenderer } from './renderer';
 import type { ShapeDatum } from './renderer';
 import { UI } from './ui';
+import { SmoothVec3, SmoothQuat, Interpolator } from './smooth';
 import * as THREE from 'three';
 
 // prettier-ignore
@@ -30,12 +31,17 @@ function main() {
 
 	let ws: WebSocket | null = null;
 	let connected = false;
+	let disconnectTimer = 0;
 
+	const interp = new Interpolator(10);
 	let firstPerson = false;
 	const origCamPos = camera.position.clone();
 	const origTarget = controls.target.clone();
-	const playerQuat = new THREE.Quaternion();
-	let hasPlayerQuat = false;
+	const playerPos = new SmoothVec3();
+	const playerQuat = new SmoothQuat();
+	const handSmooth = Array.from({ length: 10 }, () => new SmoothVec3());
+	let hasPlayer = false;
+	let hasRotation = false;
 
 	const isRemote =
 		window.location.hostname !== 'localhost' &&
@@ -58,7 +64,27 @@ function main() {
 	});
 
 	function connect(ip: string, port: number, auto?: boolean) {
-		disconnect();
+		disconnectTimer = 0;
+		shapes.clear();
+		hasPlayer = false;
+		hasRotation = false;
+
+		const marker = scene.getObjectByName('player') as THREE.Mesh;
+		if (marker) marker.position.set(0, 0, 0);
+		playerPos.reset();
+		playerQuat.reset();
+
+		for (const s of handSmooth) s.reset();
+		for (const group of handGroups) {
+			for (const child of group.children) {
+				(child as THREE.Mesh).position.set(0, 0, 0);
+			}
+		}
+
+		if (ws) {
+			ws.close();
+			ws = null;
+		}
 
 		const url = `ws://${ip}:${port}/`;
 
@@ -78,7 +104,10 @@ function main() {
 			connected = false;
 			ui.setConnected(false);
 			ws = null;
-			shapes.clear();
+			if (!disconnectTimer) {
+				shapes.disconnect();
+				disconnectTimer = performance.now() + 1000;
+			}
 			if (auto) ui.show();
 		});
 
@@ -87,15 +116,13 @@ function main() {
 				const msg: ServerMessage = JSON.parse(e.data);
 
 				if (msg.p) {
-					const marker = scene.getObjectByName('player');
-					if (marker) {
-						marker.position.set(msg.p[0], msg.p[1], msg.p[2]);
-					}
+					playerPos.set(msg.p[0], msg.p[1], msg.p[2]);
+					hasPlayer = true;
 				}
 
 				if (msg.r) {
 					playerQuat.set(msg.r[0], msg.r[1], msg.r[2], msg.r[3]);
-					hasPlayerQuat = true;
+					hasRotation = true;
 				}
 
 				if (msg.s) {
@@ -106,16 +133,13 @@ function main() {
 					for (let h = 0; h < 2; h++) {
 						const hand = msg.h[h];
 						if (!hand) continue;
-						const group = handGroups[h];
+						const base = h * 5;
 						for (let t = 0; t < 5; t++) {
-							const sphere = group.children[t] as THREE.Mesh;
-							if (sphere) {
-								sphere.position.set(
-									hand[t * 3],
-									hand[t * 3 + 1],
-									hand[t * 3 + 2],
-								);
-							}
+							const x = hand[t * 3];
+							const y = hand[t * 3 + 1];
+							const z = hand[t * 3 + 2];
+							if (x === 0 && y === 0 && z === 0) continue;
+							handSmooth[base + t].set(x, y, z);
 						}
 					}
 				}
@@ -126,11 +150,18 @@ function main() {
 	}
 
 	function disconnect(): void {
-		shapes.clear();
+		if (disconnectTimer) return;
+		shapes.disconnect();
+		disconnectTimer = performance.now() + 1000;
+		hasPlayer = false;
+		hasRotation = false;
 
 		const marker = scene.getObjectByName('player') as THREE.Mesh;
 		if (marker) marker.position.set(0, 0, 0);
+		playerPos.reset();
+		playerQuat.reset();
 
+		for (const s of handSmooth) s.reset();
 		for (const group of handGroups) {
 			for (const child of group.children) {
 				(child as THREE.Mesh).position.set(0, 0, 0);
@@ -158,21 +189,47 @@ function main() {
 		}
 	});
 
-	function loop() {
+	function loop(time: number) {
+		const alpha = interp.tick(time);
+
+		shapes.interpolate(alpha);
+
+		if (disconnectTimer && time > disconnectTimer) {
+			shapes.clear();
+			disconnectTimer = 0;
+		}
+
+		if (hasPlayer) {
+			playerPos.update(alpha);
+			const marker = scene.getObjectByName('player');
+			if (marker) {
+				playerPos.apply(marker.position);
+				if (hasRotation) {
+					playerQuat.update(alpha);
+					playerQuat.apply(marker.quaternion);
+				}
+			}
+		}
+
+		for (let i = 0; i < 10; i++) {
+			const s = handSmooth[i];
+			s.update(alpha);
+			const h = Math.floor(i / 5);
+			const t = i % 5;
+			s.apply((handGroups[h].children[t] as THREE.Mesh).position);
+		}
+
 		if (firstPerson) {
 			const marker = scene.getObjectByName('player');
 			if (marker) {
-				camera.position.set(
-					marker.position.x,
-					marker.position.y,
-					marker.position.z,
-				);
-				if (hasPlayerQuat) {
-					camera.quaternion.copy(playerQuat);
+				camera.position.copy(marker.position);
+				if (hasRotation) {
+					camera.quaternion.copy(marker.quaternion);
 					camera.updateMatrix();
 				}
 			}
 		}
+
 		if (!firstPerson) controls.update();
 		renderer.render(scene, camera);
 		requestAnimationFrame(loop);
