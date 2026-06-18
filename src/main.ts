@@ -66,7 +66,6 @@ function main() {
 		try {
 			ws = new WebSocket(url);
 		} catch {
-			if (auto) ui.show();
 			return;
 		}
 
@@ -83,7 +82,6 @@ function main() {
 				shapes.disconnect();
 				disconnectTimer = performance.now() + 1000;
 			}
-			if (auto) ui.show();
 		});
 
 		ws.addEventListener('message', (e: MessageEvent) => {
@@ -127,7 +125,7 @@ function main() {
 	}
 
 	if (isRemote) {
-		ui.hide();
+		ui.setIp(window.location.hostname);
 		connect(window.location.hostname, 8081, true);
 	}
 

@@ -53,6 +53,10 @@ export class UI {
 		this.fpvHandler = fn;
 	}
 
+	setIp(ip: string): void {
+		this.ip.value = ip;
+	}
+
 	setConnected(connected: boolean): void {
 		this.connect.textContent = connected ? 'Disconnect' : 'Connect';
 		this.connect.className = connected ? 'connected' : '';
@@ -61,14 +65,6 @@ export class UI {
 	setFpvActive(active: boolean): void {
 		this.fpvBtn.textContent = active ? 'Orbit' : 'FPV';
 		this.fpvBtn.classList.toggle('active', active);
-	}
-
-	show(): void {
-		this.bar.style.display = 'flex';
-	}
-
-	hide(): void {
-		this.bar.style.display = 'none';
 	}
 
 	private handleConnect(): void {
