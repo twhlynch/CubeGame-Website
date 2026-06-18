@@ -1,21 +1,64 @@
 import * as THREE from 'three';
 import { createMaterial } from './shader';
 
+function linearToSRGB(c: number): number {
+	return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1.0 / 2.4) - 0.055;
+}
+
+function createLinearColor(r: number, g: number, b: number): THREE.Color {
+	return new THREE.Color(linearToSRGB(r), linearToSRGB(g), linearToSRGB(b));
+}
+
 const COLORS = [
-	0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff3300, 0x7f00ff, 0xffffff,
-	0x333333, 0x000000,
+	createLinearColor(1.0, 0.0, 0.0),
+	createLinearColor(0.0, 1.0, 0.0),
+	createLinearColor(0.0, 0.0, 1.0),
+	createLinearColor(1.0, 1.0, 0.0),
+	createLinearColor(1.0, 0.2, 0.0),
+	createLinearColor(0.5, 0.0, 1.0),
+	createLinearColor(1.0, 1.0, 1.0), 
+	createLinearColor(0.2, 0.2, 0.2),
+	createLinearColor(0.0, 0.0, 0.0),
 ];
 
 function makeGeometry(type: number) {
 	// prettier-ignore
 	switch (type) {
-		case 0: return new THREE.BoxGeometry(2, 2, 2);
-		case 1: return new THREE.SphereGeometry(1, 12, 12);
-		case 2: return new THREE.ConeGeometry(1, 2, 4);
-		case 3: return new THREE.BoxGeometry(1, 2, 1);
-		case 4: return new THREE.CylinderGeometry(1, 1, 1, 12);
-		default: return new THREE.BoxGeometry(2, 2, 2);
+		case 0: return new THREE.BoxGeometry(2, 2, 2).toNonIndexed();
+		case 1: return new THREE.SphereGeometry(1, 12, 12).toNonIndexed();
+		case 2: return createPyramidGeometry();
+		case 3: return new THREE.BoxGeometry(1, 2, 1).toNonIndexed();
+		case 4: return new THREE.CylinderGeometry(1, 1, 1, 12).toNonIndexed();
+		default: return new THREE.BoxGeometry(2, 2, 2).toNonIndexed();
 	}
+}
+
+function createPyramidGeometry(): THREE.BufferGeometry {
+	const size = 1.0;
+	const geometry = new THREE.BufferGeometry();
+
+	const vertices = new Float32Array([
+		0, size, 0, -size, -size, size, size, -size, size,
+		0, size, 0, size, -size, size, size, -size, -size,
+		0, size, 0, size, -size, -size, -size, -size, -size,
+		0, size, 0, -size, -size, -size, -size, -size, size,
+		-size, -size, size, -size, -size, -size, size, -size, -size,
+		size, -size, -size, size, -size, size, -size, -size, size,
+	]);
+
+	const normals = new Float32Array([
+		0, 0.707, 0.707, 0, 0.707, 0.707, 0, 0.707, 0.707,
+		0.707, 0.707, 0, 0.707, 0.707, 0, 0.707, 0.707, 0,
+		0, 0.707, -0.707, 0, 0.707, -0.707, 0, 0.707, -0.707,
+		-0.707, 0.707, 0, -0.707, 0.707, 0, -0.707, 0.707, 0,
+		0, -1, 0, 0, -1, 0, 0, -1, 0,
+		0, -1, 0, 0, -1, 0, 0, -1, 0,
+	]);
+
+	geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+	geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+
+	return geometry;
 }
 
 // prettier-ignore

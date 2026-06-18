@@ -52,7 +52,7 @@ export function createMaterial(
 ): THREE.ShaderMaterial {
 	return new THREE.ShaderMaterial({
 		uniforms: {
-			color: { value: new THREE.Color(color) },
+			color: { value: color },
 			ambientColor: { value: new THREE.Color(0xbbbbbb) },
 		},
 		vertexShader,
