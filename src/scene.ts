@@ -6,7 +6,6 @@ export interface SceneResources {
 	camera: THREE.PerspectiveCamera;
 	controls: OrbitControls;
 	renderer: THREE.WebGLRenderer;
-	handGroups: [THREE.Group, THREE.Group];
 }
 
 export function createScene(container: HTMLElement): SceneResources {
@@ -34,31 +33,6 @@ export function createScene(container: HTMLElement): SceneResources {
 	const grid = new THREE.GridHelper(20, 20, 0x777777, 0x555555);
 	scene.add(grid);
 
-	const playerMarker = new THREE.Mesh(
-		new THREE.SphereGeometry(0.05, 12, 8),
-		new THREE.MeshBasicMaterial({ color: 0xe0a363 }),
-	);
-	playerMarker.name = 'player';
-	scene.add(playerMarker);
-
-	const handGroups: [THREE.Group, THREE.Group] = [
-		new THREE.Group(),
-		new THREE.Group(),
-	];
-	for (let h = 0; h < 2; h++) {
-		const group = handGroups[h];
-		group.name = `hand-${h}`;
-		for (let t = 0; t < 5; t++) {
-			const sphere = new THREE.Mesh(
-				new THREE.SphereGeometry(0.015, 8, 6),
-				new THREE.MeshBasicMaterial({ color: [0x6e94b2, 0xc48283][h] }),
-			);
-			sphere.name = `hand-${h}-tip-${t}`;
-			group.add(sphere);
-		}
-		scene.add(group);
-	}
-
 	window.addEventListener('resize', () => {
 		const w = container.clientWidth;
 		const h = container.clientHeight;
@@ -67,5 +41,5 @@ export function createScene(container: HTMLElement): SceneResources {
 		renderer.setSize(w, h);
 	});
 
-	return { scene, camera, controls, renderer, handGroups };
+	return { scene, camera, controls, renderer };
 }
